@@ -1,0 +1,235 @@
+# author: Varga Máté, Jeong Han Lee
+# email: varga.mate@atomki.mta.hu, han.lee@esss.se
+#        
+# version: 1.0.2
+# date: 2018/JUL/20
+# description: Kameleon file to simulate the ESS FIM SCB Environmental Monitoring subsystem.
+
+# TERMINATOR = CR
+
+COMMANDS = [
+     [ "Get Name",               "N?***",  1 ],
+     [ "Get Firmware Version",   "F?***",  2 ],
+     [ "Get MAC Address",        "M?***",  3 ],
+     [ "Get IP Address",         "I?***",  4 ],
+     [ "Get Subnet Mask",        "S?***",  5 ],
+     [ "Get Gateway Address",    "G?***",  6 ],
+     [ "Get DNS Server Address", "D?***",  7 ],
+     [ "Get TCP Port",           "P?***",  8 ],
+     [ "Read Configuration",     "C?***",  9 ],
+     [ "Get Uptime",             "U?***", 10 ],
+     [ "Get Values",             "V?***", 11 ],
+     [ "Set MAC Address",        "M!***", 12 ],
+     [ "Set IP Address",         "I!***", 13 ],
+     [ "Set Subnet Mask",        "S!***", 14 ],
+     [ "Set Gateway Address",    "G!***", 15 ],
+     [ "Set DNS Server Address", "D!***", 16 ],
+     [ "Set TCP Port",           "P!***", 17 ],
+     [ "Write Configuration",    "C!***", 18 ],
+     [ "Invalid Command",        "***",   19 ]
+]
+
+STATUSES = [
+     ["Get Name",               CUSTOM, "GetName( )"             ],
+     ["Get Firmware Version",   CUSTOM, "GetFirmwareVersion( )"  ],
+     ["Get MAC Address",        CUSTOM, "GetMACAddress( )"       ],
+     ["Get IP Address",         CUSTOM, "GetIPAddress( )"        ],
+     ["Get Subnet Mask",        CUSTOM, "GetSubnetMask( )"       ],
+     ["Get Gateway Address",    CUSTOM, "GetGatewayAddress( )"   ],
+     ["Get DNS Server Address", CUSTOM, "GetDNSServerAddress( )" ],
+     ["Get TCP Port",           CUSTOM, "GetTCPPort( )"          ],
+     ["Read Configuration",     CUSTOM, "ReadConfiguration( )"   ],
+     ["Get Uptime",             CUSTOM, "GetUptime( )"           ],
+     ["Get Values",             CUSTOM, "GetValues( )"           ],
+     ["Set MAC Address",        CUSTOM, "SetMACAddress( )"       ],
+     ["Set IP Address",         CUSTOM, "SetIPAddress( )"        ],
+     ["Set Subnet Mask",        CUSTOM, "SetSubnetMask( )"       ],
+     ["Set Gateway Address",    CUSTOM, "SetGatewayAddress( )"   ],
+     ["Set DNS Server Address", CUSTOM, "SetDNSServerAddress( )" ],
+     ["Set TCP Port",           CUSTOM, "SetTCPPort( )"          ],
+     ["Write Configuration",    CUSTOM, "WriteConfiguration( )"  ],
+     ["Invalid Command",        FIXED,  "Invalid Command!"       ]
+]
+
+# User-custom Python code
+import re
+import copy
+import socket
+
+
+startTime=datetime.datetime.utcnow()
+class Config( ):
+     serialNumber = 0
+     mac = "41:54:4F:4D:4B:01"
+     dns = "192.168.1.1"
+     ip = "192.168.1.100"
+     subnet = "255.255.255.0"
+     gw = "192.168.1.1"
+     port = 6666
+
+EEPROM = Config( )
+Configuration = Config( )
+
+
+# https://docs.python.org/2/library/socket.html
+def valid_ip(address):
+    try: 
+        socket.inet_aton(address)
+        return True
+    except:
+        return False
+
+
+def GetName() :
+     global Configuration
+     if re.sub('[\r]', '', COMMAND_RECEIVED).rstrip("\n") == "N?" :
+          return "ESS FIM SCB Mon. v1 #" + str( Configuration.serialNumber )
+     else :
+          return "Invalid Command!"
+
+def GetFirmwareVersion() :
+     global Configuration
+     if re.sub('[\r]', '', COMMAND_RECEIVED).rstrip("\n") == "F?" :
+          return "20180720180000"
+     else :
+          return "Invalid Command!"
+
+def GetMACAddress() :
+     global Configuration
+     if re.sub('[\r]', '', COMMAND_RECEIVED).rstrip("\n") == "M?" :
+          return Configuration.mac
+     else :
+          return "Invalid Command!"
+
+def SetMACAddress() :
+     global Configuration
+     address = re.sub('[\r]', '', COMMAND_RECEIVED[2:].rstrip("\n"))
+     if re.match("^[0-9a-f]{2}([:])[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$", address.lower()):
+          Configuration.mac = address
+          return;
+     else:
+          return "Invalid MAC Address!"
+
+def GetIPAddress() :
+     global Configuration
+     if re.sub('[\r]', '', COMMAND_RECEIVED).rstrip("\n") == "I?" :
+          return Configuration.ip
+     else :
+          return "Invalid Command!"
+
+def SetIPAddress() :
+     global Configuration
+     print      COMMAND_RECEIVED[2:].rstrip('\r\n')
+     address = re.sub('[\r]', '', COMMAND_RECEIVED[2:].rstrip("\n"))
+     address = address.strip()
+     if valid_ip(address):
+          Configuration.ip = address
+          return;
+     else:
+          return "Invalid IP Address!"
+
+def GetSubnetMask() :
+     global Configuration
+     if re.sub('[\r]', '', COMMAND_RECEIVED).rstrip("\n") == "S?" :
+          return Configuration.subnet
+     else :
+          return "Invalid Command!"
+
+def SetSubnetMask() :
+     global Configuration
+     address = re.sub('[\r]', '', COMMAND_RECEIVED[2:].rstrip("\n"))
+     address = address.strip()
+     if valid_ip(address):
+          Configuration.subnet = address
+          return;
+     else:
+          return "Invalid Subnet Mask!"
+
+def GetGatewayAddress() :
+     global Configuration
+     if re.sub('[\r]', '', COMMAND_RECEIVED).rstrip("\n") == "G?" :
+          return Configuration.gw
+     else :
+          return "Invalid Command!"
+
+def SetGatewayAddress() :
+     global Configuration
+     address = re.sub('[\r]', '', COMMAND_RECEIVED[2:].rstrip("\n"))
+     address = address.strip()
+     if valid_ip(address):
+          Configuration.gw = address
+          return;
+     else:
+          return "Invalid Gateway Address!"
+
+def GetDNSServerAddress() :
+     global Configuration
+     if re.sub('[\r]', '', COMMAND_RECEIVED).rstrip("\n") == "D?" :
+          return Configuration.dns
+     else :
+          return "Invalid Command!"
+
+def SetDNSServerAddress() :
+     global Configuration
+     address = re.sub('[\r]', '', COMMAND_RECEIVED[2:].rstrip("\n"))
+     address = address.strip()
+     if valid_ip(address):
+          Configuration.dns = address
+          return;
+     else:
+          return "Invalid DNS Server Address!"
+
+def GetTCPPort() :
+     global Configuration
+     if re.sub('[\r]', '', COMMAND_RECEIVED).rstrip("\n") == "P?" :
+          return str( Configuration.port )
+     else :
+          return "Invalid Command!"
+
+def SetTCPPort() :
+     global Configuration
+     port = re.sub('[\r]', '', COMMAND_RECEIVED[2:].rstrip("\n"))
+     if int(port) > 0 and int(port) < 65536:
+          Configuration.port = int(port)
+          return;
+     else:
+          return "Invalid Port Number!"
+
+def ReadConfiguration( ) :
+     global Configuration
+     global EEPROM
+     if re.sub('[\r]', '', COMMAND_RECEIVED).rstrip("\n") == "C?" :
+          Configuration = copy.deepcopy( EEPROM )
+     else :
+          return "Invalid Command!"
+
+def WriteConfiguration( ) :
+     global Configuration
+     global EEPROM
+     if re.sub('[\r]', '', COMMAND_RECEIVED).rstrip("\n") == "C!" :
+          EEPROM = copy.deepcopy( Configuration )
+     else :
+          return "Invalid Command!"
+
+def GetUptime( ) :
+     global startTime
+     global Configuration
+     curr_uptime = datetime.datetime.utcnow() - startTime
+     if re.sub('[\r]', '', COMMAND_RECEIVED).rstrip("\n") == "U?" :
+          return int(round((curr_uptime.microseconds + (curr_uptime.seconds + curr_uptime.days * 24 * 3600) * 1000000) / 1000.0 ))
+     else :
+          return "Invalid Command!"
+
+def GetValues( ):
+     U = 24000 + random.randrange( -500, 500 )
+     IDI = 250 + random.randrange( -10, 10 )
+     IDO = 250 + random.randrange( -10, 10 )
+     IA1 = 250 + random.randrange( -10, 10 )
+     IA2 = 250 + random.randrange( -10, 10 )
+     T = 20000 + random.randrange( -10000, 15000 )
+     H = 40000 + random.randrange( -10000, 10000 )
+     P = 10000 + random.randrange( -100, 100 )
+     if re.sub('[\r]', '', COMMAND_RECEIVED).rstrip("\n") == "V?" :
+          return "U:" + str(U) + "mV,IDI:" + str(IDI) + "mA,IDO:" + str(IDO) + "mA,IA1:" + str(IA1) + "mA,IA2:" + str(IA2) + "mA,T:" + str(T) + "mC,P:" + str(P) + "0Pa,H:" + str(H) + "mPercent"
+     else :
+          return "Invalid Command!"
